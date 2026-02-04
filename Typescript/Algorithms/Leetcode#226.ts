@@ -70,3 +70,5 @@ printPreOrderTreeTraversal(root2);
 invertTree(root2);
 console.log("Root 2 after inversion");
 printPreOrderTreeTraversal(root2);
+
+export {};
