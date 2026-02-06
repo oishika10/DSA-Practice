@@ -1,32 +1,21 @@
 function printKnapsackTest(
-  testName: string,
   profit: number[],
   weight: number[],
   capacity: number,
 ) {
-  console.log("=".repeat(50));
-  console.log(`🧪 ${testName}`);
-  console.log("-".repeat(50));
-
-  console.log("Inputs:");
-  console.log("  Profit:  ", profit);
-  console.log("  Weight:  ", weight);
-  console.log("  Capacity:", capacity);
+  console.log("Profit:", profit);
+  console.log("Weight:", weight);
+  console.log("Capacity:", capacity);
 
   console.log();
   console.log("Brute Force Solution:");
   const brute = knapSackBruteForce(capacity, profit, weight, profit.length);
-  console.log("  → Max Profit:", brute);
+  console.log(brute);
 
   console.log();
   console.log("Dynamic Programming Solution:");
   const dp = knapSackDynamicProgramming(capacity, profit, weight);
-  console.log("  → Max Profit:", dp);
-
-  console.log();
-  console.log("Result Match:", brute === dp ? "✅ YES" : "❌ NO");
-  console.log("=".repeat(50));
-  console.log();
+  console.log(dp);
 }
 
 function knapSackBruteForce(
@@ -123,8 +112,8 @@ function knapSackDynamicProgramming(
   return dpTable[numberOfItems][capacity];
 }
 
-printKnapsackTest("Classic Knapsack Example", [60, 100, 120], [10, 20, 30], 50);
+printKnapsackTest([60, 100, 120], [10, 20, 30], 50);
 
-printKnapsackTest("Small Capacity Example", [1, 6, 10, 16], [1, 2, 3, 5], 7);
+printKnapsackTest([1, 6, 10, 16], [1, 2, 3, 5], 7);
 
-printKnapsackTest("Nothing Fits", [10, 20, 30], [5, 10, 15], 4);
+printKnapsackTest([10, 20, 30], [5, 10, 15], 4);
