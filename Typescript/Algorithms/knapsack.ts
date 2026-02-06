@@ -122,3 +122,9 @@ function knapSackDynamicProgramming(
 
   return dpTable[numberOfItems][capacity];
 }
+
+printKnapsackTest("Classic Knapsack Example", [60, 100, 120], [10, 20, 30], 50);
+
+printKnapsackTest("Small Capacity Example", [1, 6, 10, 16], [1, 2, 3, 5], 7);
+
+printKnapsackTest("Nothing Fits", [10, 20, 30], [5, 10, 15], 4);
