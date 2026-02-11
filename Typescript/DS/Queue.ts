@@ -24,7 +24,7 @@ class Queue {
     this.tail = (this.tail + 1) % this.capacity;
   }
 
-  public dequeue() {
+  public dequeue(): number {
     if (this.length === 0) {
       throw Error("Queue has no items, there is nothing to dequeue");
     }
