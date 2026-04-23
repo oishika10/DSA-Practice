@@ -134,8 +134,42 @@ class FixedWindowCounter:
             else:
                 return False
 
+'''
+Sliding Window Log:
 
+Maintains a log of all request timestamps
+When a request arrives:
 
+    Remove timestamps older than the window size
+    Count remaining timestamps
+    If count is below limit, add new timestamp and allow
+    If count is at limit, reject the request
+
+The window slides continuously with time
+Provides exact counting within any time window
+'''
+
+class SlidingWindowLog:
+    def __init__(self, limit: int, window_size: int):
+        self.limit = limit
+        self.window_size = window_size
+        self.window_start = time.time()
+        self.request_log = []
+        self.lock = threading.Lock()
+
+    def clean_old_requests(self):
+        now = time.time()
+        self.request_log = [timestamp for timestamp in self.request.log if now - timestamp < self.window_size]
+
+    def allow_request(self) -> bool:
+        with self.lock:
+            self.clean_old_requests()
+
+            if len(self.request_log) < self.limit:
+                self.request_log.append(time.time())
+                return True
+            else:
+                return False
 
 if __name__ == "__main__":
     # Create a token bucket with 2 tokens per second and a bucket size of 5
@@ -171,6 +205,17 @@ if __name__ == "__main__":
 
     print("Fixed window counter:")
     limiter = FixedWindowCounter(max_requests=5, window_size=1)
+
+    # Simulate 20 requests
+    for i in range(20):
+        if limiter.allow_request():
+            print(f"Request {i + 1}: Allowed")
+        else:
+            print(f"Request {i + 1}: Rejected")
+        time.sleep(0.1)  # Sleep for 0.1 seconds between requests
+
+    print("Sliding window log:")
+    limiter = SlidingWindowLog(max_requests=5, window_size=1)
 
     # Simulate 20 requests
     for i in range(20):
