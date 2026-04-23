@@ -99,6 +99,43 @@ class LeakyBucket:
                 self.process_thread.join()
 
 
+'''
+The fixed window counter algorithm:
+
+    Time is divided into fixed windows (e.g., 1 second)
+    Each window has a maximum request limit
+    When a request arrives:
+        If the current window’s counter is below the limit, increment and allow
+        If the counter is at the limit, reject the request
+    At the start of each new window, the counter resets to zero
+'''
+
+class FixedWindowCounter:
+    def __init__(self, limit: int, window_size: int):
+        self.limit = limit
+        self.window.size = window_size
+        self.count = 0
+        self.window_start = time.time()
+        self.lock = threading.Lock()
+
+    def reset_window(self):
+        now = time.time()
+        if now - self.window_start >= self.window_size:
+            self.count = 0
+            self.window_start = time.time()
+
+    def allow_request(self) -> bool:
+        with self.lock:
+            self.reset_window()
+
+            if self.count < self.limit:
+                self.count += 1
+                return True
+            else:
+                return False
+
+
+
 
 if __name__ == "__main__":
     # Create a token bucket with 2 tokens per second and a bucket size of 5
@@ -131,3 +168,14 @@ if __name__ == "__main__":
             time.sleep(5)
         finally:
             bucket.stop_processing()
+
+    print("Fixed window counter:")
+    limiter = FixedWindowCounter(max_requests=5, window_size=1)
+
+    # Simulate 20 requests
+    for i in range(20):
+        if limiter.allow_request():
+            print(f"Request {i + 1}: Allowed")
+        else:
+            print(f"Request {i + 1}: Rejected")
+        time.sleep(0.1)  # Sleep for 0.1 seconds between requests
