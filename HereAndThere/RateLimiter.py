@@ -1,5 +1,6 @@
 import time
 import threading
+from queue import Queue
 
 '''
 Token Bucket:
@@ -41,3 +42,92 @@ class TokenBucket:
                 allowed = False
             self.refill()
             return allowed
+
+'''
+The leaky bucket algorithm:
+
+    Requests arrive at the bucket at any rate
+    The bucket has a maximum capacity (queue size)
+    Requests are processed at a constant rate (leak rate)
+    When a request arrives:
+        If there’s space in the queue, it’s added
+        If the queue is full, the request is rejected
+    The background thread continuously processes requests at the fixed rate
+
+'''
+
+class LeakyBucket:
+    def __init__(self, leak_rate: int, queue_size: int):
+        self.leak_rate = leak_rate
+        self.queue_size = queue_size
+        self.queue = Queue(maxsize=queue_size)
+        self.lock = threading.Lock()
+        self.processing = False
+        self.stop_event = threading.Event()
+
+    def start_processing(self):
+        self.processing = True
+        # 1. Create a new thread
+        self.process_thread = threading.Thread(target=self.process_requests)
+        #2. Start the thread
+        self.process_thread.start()
+        #3. Make this a daemon thread
+        self.process_thread.daemon = True
+
+    def process_requests(self):
+        while not self.stop_event.is_set():
+            if not self.queue.empty():
+                request_id = self.queue.get()
+                print(f"Processing request {request_id}")
+                time.sleep(1 / self.leak_rate)  # Simulate processing time
+            else:
+                time.sleep(0.1)  # Sleep briefly to avoid busy waiting
+
+    def add_request(self, request_id: int) -> bool:
+        with self.lock:
+            if not self.queue.full():
+                self.queue.put(request_id)
+                return True
+            else:
+                return False
+
+    def stop_processing(self):
+        if self.processing:
+            self.processing = False
+            self.stop_event.set()
+            if hasattr(self, 'process_thread'):
+                self.process_thread.join()
+
+
+
+if __name__ == "__main__":
+    # Create a token bucket with 2 tokens per second and a bucket size of 5
+    print("Token bucket: ")
+    bucket = TokenBucket(tokens_per_second=2, bucket_size=5)
+
+    # Simulate 20 requests
+    for i in range(20):
+        if bucket.consume():
+            print(f"Request {i + 1}: Allowed")
+        else:
+            print(f"Request {i + 1}: Rejected")
+        time.sleep(0.2)  # Sleep for 0.2 seconds between requests
+
+        print("Leaky bucket:")
+
+        bucket = LeakyBucket(rate_per_second=2, capacity=5)
+        bucket.start_processing()
+
+        try:
+            # Simulate 20 requests
+            for i in range(20):
+                if bucket.add_request(i + 1):
+                    print(f"Request {i + 1}: Added to queue")
+                else:
+                    print(f"Request {i + 1}: Queue full, request rejected")
+                time.sleep(0.2)  # Sleep for 0.2 seconds between requests
+
+            # Wait for all requests to be processed
+            time.sleep(5)
+        finally:
+            bucket.stop_processing()
