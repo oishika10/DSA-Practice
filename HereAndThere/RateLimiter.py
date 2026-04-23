@@ -33,8 +33,8 @@ class TokenBucket:
             self.last_refill_timestamp = now
 
     def consume(self, tokens: int = 1) -> bool:
-        allowed = False
         with self.lock:
+            allowed = False
             if self.tokens >= tokens:
                 self.tokens -= tokens
                 allowed = True
@@ -171,6 +171,67 @@ class SlidingWindowLog:
             else:
                 return False
 
+'''
+Sliding Window Counter:
+
+    Maintains two counters: current window and previous window
+    When a request arrives:
+        Update window boundaries if needed
+        Calculate weighted count from both windows
+        If total is below limit, increment current window and allow
+        If total is at limit, reject the request
+    Uses weighted average to approximate sliding window
+    Provides good accuracy with minimal memory usage
+'''
+
+class SlidingWindowCounter:
+    def __init__(self, max_requests: int, window_size: int):
+        """
+        Initialize a sliding window counter rate limiter.
+        
+        Args:
+            max_requests: Maximum number of requests allowed in the window
+            window_size: Size of the sliding window in seconds
+        """
+        self.max_requests = max_requests
+        self.window_size = window_size
+        self.current_window = 0
+        self.previous_window = 0
+        self.window_start = time.time()
+        self.lock = threading.Lock()
+
+    def _reset_window(self):
+        """
+        Update window counters based on elapsed time.
+        This method is called before each request check.
+        """
+        now = time.time()
+        if now - self.window_start >= self.window_size:
+            self.previous_window = self.current_window
+            self.current_window = 0
+            self.window_start = now
+
+    def allow_request(self) -> bool:
+        """
+        Check if a new request is allowed using weighted counters.
+        
+        Returns:
+            bool: True if request is allowed, False if rate limit exceeded
+        """
+        with self.lock:
+            self._reset_window()
+            current_time = time.time()
+            window_progress = (current_time - self.window_start) / self.window_size
+            
+            # Weighted count of previous window
+            weighted_count = self.previous_window * (1 - window_progress)
+            total_count = weighted_count + self.current_window
+            
+            if total_count < self.max_requests:
+                self.current_window += 1
+                return True
+            return False
+
 if __name__ == "__main__":
     # Create a token bucket with 2 tokens per second and a bucket size of 5
     print("Token bucket: ")
@@ -224,3 +285,14 @@ if __name__ == "__main__":
         else:
             print(f"Request {i + 1}: Rejected")
         time.sleep(0.1)  # Sleep for 0.1 seconds between requests
+
+    print("Sliding window counter:")
+    limiter = SlidingWindowCounter(max_requests=5, window_size=1)
+
+    # Simulate 20 requests
+    for i in range(20):
+        if limiter.allow_request():
+            print(f"Request {i + 1}: Allowed")
+        else:
+            print(f"Request {i + 1}: Rejected")
+        time.sleep(0.1)  # Sleep for 0.1 seconds be
