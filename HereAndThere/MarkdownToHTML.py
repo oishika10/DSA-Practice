@@ -61,7 +61,7 @@ def markdownToHTML(markdown: str) -> str:
     #Handle all newlines and brs first
     while i < len(markdown):
         # This will fail if i+2 is out of bounds
-        if i + 2 < len(markdown) and markdown[i:i+2] == "\n\n":
+        if i + 1 < len(markdown) and markdown[i:i+2] == "\n\n":
             if in_blockquote:
                 html += "</blockquote>"
                 in_blockquote = False
@@ -73,7 +73,16 @@ def markdownToHTML(markdown: str) -> str:
                 html += "</p>"
                 i += 2
         elif markdown[i] == "\n":
-            html += "<br />"
+            if in_blockquote:
+                if i + 1 < len(markdown) and markdown[i+1] != ">":
+                    html += "</blockquote>"
+                    in_blockquote = False
+                # exiting blockquote
+                else:
+                    html += "</blockquote></p><p>"
+                    in_blockquote = False
+            else:
+                html += "<br />"
             i += 1
         #Handle the blockquote
         elif markdown[i] == ">":
@@ -95,6 +104,11 @@ def markdownToHTML(markdown: str) -> str:
         else:
             html += markdown[i]
             i += 1
+    # Close any open blockquotes or paragraphs at the end of the string
+    if in_blockquote:
+        html += "</blockquote>"
+    if in_strikethough:
+        html += "</del>"
     html += "</p>"
     return html
 
