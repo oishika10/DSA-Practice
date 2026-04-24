@@ -60,7 +60,8 @@ def markdownToHTML(markdown: str) -> str:
 
     #Handle all newlines and brs first
     while i < len(markdown):
-        if markdown[i:i+2] == "\n\n":
+        # This will fail if i+2 is out of bounds
+        if i + 2 < len(markdown) and markdown[i:i+2] == "\n\n":
             if in_blockquote:
                 html += "</blockquote>"
                 in_blockquote = False
@@ -79,6 +80,8 @@ def markdownToHTML(markdown: str) -> str:
             if not in_blockquote:
                 html += "<blockquote>"
                 in_blockquote = True
+            i += 1
+            if i + 1 < len(markdown) and markdown[i] == " ":
                 i += 1
         #Handle the strikethrough
         elif markdown[i:i+2] == "~~":
@@ -92,3 +95,47 @@ def markdownToHTML(markdown: str) -> str:
         else:
             html += markdown[i]
             i += 1
+    html += "</p>"
+    return html
+
+if __name__ == "__main__":
+   # Sample test cases for Markdown processor
+
+    # List of input strings
+    test_inputs = [
+        # Sample 1 – Basic paragraphs and line breaks
+        "Hello world.\nThis is a second line in the same paragraph.\n\nThis is a new paragraph.",
+
+        # Sample 2 – Paragraphs with blockquote
+        "Normal paragraph here.\n\n> This is a blockquote line 1\n> This is line 2 of the same blockquote\n\nBack to normal paragraph.",
+
+        # Sample 3 – Strikethrough inside a paragraph
+        "This is a ~~mistyped~~ corrected word.\nAnother paragraph without formatting.",
+
+        # Sample 4 – Mix of everything
+        "Paragraph one with a soft\nline break.\n\nParagraph two starts here\n> Blockquote line 1\n> Blockquote line 2\n\nFinal paragraph with a ~~strikethrough~~ word.",
+
+        # Sample 5 – Consecutive blockquotes
+        "> First blockquote\n> still first blockquote\n\n> Second blockquote starts here\n> continues\nNormal paragraph after blockquotes."
+    ]
+
+    # Optional: placeholder expected outputs (replace with your real HTML if available)
+    expected_outputs = [
+        "<p>Hello world.<br />This is a second line in the same paragraph.</p>\n<p>This is a new paragraph.</p>",
+        "<p>Normal paragraph here.</p>\n<p><blockquote>This is a blockquote line 1<br />This is line 2 of the same blockquote</blockquote></p>\n<p>Back to normal paragraph.</p>",
+        "<p>This is a <del>mistyped</del> corrected word.</p>\n<p>Another paragraph without formatting.</p>",
+        "<p>Paragraph one with a soft<br />line break.</p>\n<p>Paragraph two starts here<br /><blockquote>Blockquote line 1<br />Blockquote line 2</blockquote></p>\n<p>Final paragraph with a <del>strikethrough</del> word.</p>",
+        "<p><blockquote>First blockquote<br />still first blockquote</blockquote></p>\n<p><blockquote>Second blockquote starts here<br />continues</blockquote></p>\n<p>Normal paragraph after blockquotes.</p>"
+    ]
+
+    # Run tests
+    for i, input_text in enumerate(test_inputs):
+        result = markdownToHTML(input_text)
+        print(f"Test case {i+1}:")
+        print("Input:")
+        print(input_text)
+        print("Output:")
+        print(result)
+        print("Expected:")
+        print(expected_outputs[i])
+        print("-" * 40)
