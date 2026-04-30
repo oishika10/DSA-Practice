@@ -32,33 +32,52 @@ def getUserInput():
             i: int = 1
             while i < len(splitCommanddsList):
                 if splitCommanddsList[i].startswith("--"):
+                    # Long flag: starts with '--'
+                    # Example input: --output=json
                     if "=" in splitCommanddsList[i]:
+                        # Flag has an inline value separated by '='
+                        # e.g. "--output=json" → split into ["--output", "json"]
+                        #      flagName = "output", flagValue = "json"
                         values = splitCommanddsList[i].split("=", 1)
-                        flagName = values[0][2:]
+                        flagName = values[0][2:]  # Strip leading '--'
                         flagValue = values[1]
                         longFlags[flagName] = flagValue
                     else:
-                        flagName = splitCommanddsList[i][2:]
+                        # Flag is a boolean toggle with no value
+                        # e.g. "--verbose" → flagName = "verbose", stored as None (presence = True)
+                        flagName = splitCommanddsList[i][2:]  # Strip leading '--'
                         longFlags[flagName] = None
                     i += 1
                 elif splitCommanddsList[i].startswith("-"):
-                    # 1. Slice off the '-' and get individual flag characters
-                    chars = splitCommanddsList[i][1:] 
+                    # Short flag: starts with a single '-'
+                    # Short flags can be grouped together as a single token
+                    # e.g. "-vp" means both -v and -p are set
 
-                    # 2. Check for a value in the NEXT argument
+                    # 1. Slice off the '-' and get individual flag characters
+                    # e.g. "-vp" → chars = "vp" → ['v', 'p']
+                    chars = splitCommanddsList[i][1:]
+
+                    # 2. Check if the NEXT token is a value (not another flag)
+                    # e.g. "-p 8080" → next_val = "8080"
+                    # e.g. "-p -v"  → next_val = None (next token is a flag, skip)
                     next_val = None
                     if i + 1 < len(splitCommanddsList) and not splitCommanddsList[i+1].startswith("-"):
                         next_val = splitCommanddsList[i+1]
 
-                    # 3. Apply boolean 'True' to all flags in the group
+                    # 3. Set all flags in the group to True initially
+                    # e.g. "-vp" → shortFlags = {'v': True, 'p': True}
                     for c in chars:
                         shortFlags[c] = True
-                        
-                    # 4. If a value was found, assign it ONLY to the last flag in the group
+
+                    # 4. If a value token was found, assign it to the LAST flag in the group
+                    # e.g. "-vp 8080" → shortFlags = {'v': True, 'p': '8080'}
+                    # The value is consumed (i incremented) so it isn't treated as an argument
                     if next_val:
                         shortFlags[chars[-1]] = next_val
-                        i += 1 # Consume the value argument
+                        i += 1  # Consume the value token
                 else:
+                    # Positional argument: not a flag, just a plain value
+                    # e.g. "run server.py file.txt" → arguments = ["server.py", "file.txt"]
                     arguments.append(splitCommanddsList[i])
                     i += 1
 
